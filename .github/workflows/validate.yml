@@ -1,0 +1,39 @@
+name: Validate detection rules
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  yara:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install YARA
+        run: sudo apt-get update && sudo apt-get install -y yara
+      - name: Compile every YARA rule
+        run: |
+          set -e
+          shopt -s nullglob
+          for f in yara/*.yar; do
+            echo "Checking $f"
+            yara -w "$f" /dev/null
+          done
+
+  sigma:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install sigma-cli
+        run: pip install sigma-cli
+      - name: Validate every Sigma rule
+        run: |
+          set -e
+          shopt -s nullglob
+          for f in sigma/*.yml; do
+            echo "Checking $f"
+            sigma check "$f"
+          done
